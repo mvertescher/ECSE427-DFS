@@ -1,0 +1,5 @@
+CC=gcc
+LD=gcc
+
+CC_FLAGS= -g -I../include 
+LD_FLAGS= -pthread 
