@@ -16,3 +16,8 @@
 *.exe
 *.out
 *.app
+
+local_file_1
+local_file_large_1
+local_file_medium_1
+local_file
