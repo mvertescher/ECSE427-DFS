@@ -51,6 +51,15 @@ static void *heartbeat()
 	datanode_status.datanode_id = datanode_id;
 	datanode_status.datanode_listen_port = datanode_listen_port;
 
+	struct sockaddr_in namenode_addr;
+	
+	memset((void *)&nn_addr, 0, sizeof(nn_addr));
+		
+	//TODO: set nn_addr
+	nn_addr.sin_family = AF_INET;
+	nn_addr.sin_addr.s_addr = inet_addr(nn_ip);
+	nn_addr.sin_port = htons(hb_port);
+
 	for (;;)
 	{
 		int heartbeat_socket = -1;
@@ -60,7 +69,8 @@ static void *heartbeat()
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
 		
-
+		if (connect(heartbeat_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr) ) == -1) printf("dfs_datanode.c: heartbeat: Connect error. \n");
+		if (send(heartbeat_socket, &ds, sizeof(ds), 0 ) == -1) printf("dfs_datanode.c: heartbeat: Send error. \n");
 
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
