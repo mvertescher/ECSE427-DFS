@@ -181,7 +181,7 @@ dfs_system_status *get_system_info(int namenode_socket)
 	if (recv(namenode_socket, (void *) response, sizeof(dfs_system_status), MSG_WAITALL) == -1){
 		printf("dfs_client.c: get_system_info: ERROR: recv\n");
 	}
-	printf("dfs_client.c: get_system_info: Received response from namenode \n");
+	printf("dfs_client.c: get_system_info: Received response from namenode. response.datanode_num: %i \n", (*response).datanode_num);
 	
 	return response;		
 }

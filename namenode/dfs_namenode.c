@@ -250,8 +250,8 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 	//TODO:fill the response and send back to the client
 	dfs_system_status response;
 	//response.datanode_num = dnlist[0].dn_id; //???
-	response.datanode_num = request.req_type; // NEED TO CHANGE
-	//response.datanodes = *dnlist; //???
+	response.datanode_num = dncnt; //request.req_type; // NEED TO CHANGE
+	//response.datanodes = &dnlist; //???
  
 	int send_error = send(client_socket, &response, sizeof(response), 0);
 	assert(send_error >= 0);
