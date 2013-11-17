@@ -100,37 +100,43 @@ int register_datanode(int heartbeat_socket)
 	{
 		int datanode_socket = -1;
 		//TODO: accept connection from DataNodes and assign return value to datanode_socket;
-		//datanode_socket = 
 		
-		//struct sockaddr_in hb_dn_addr;
-		//dfs_cm_datanode_status_t datanode_status;
-		//int hb_dn_sockfd;
-		//int sin_len = sizeof(struct sockaddr_in);
 		int sin_len = sizeof(struct sockaddr_in);
 		struct sockaddr_in datanode_addr;
 
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
 		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // &sizeof??
 
-		//if ((datanode_socket = accept(hb_service_sockfd, (struct sockaddr *) &hb_dn_addr, &sin_len)) == -1) printf("dfs_namenode.c: register_datanode: ACCEPT ERROR.  \n");
+
 
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
+		
 		//TODO: receive datanode's status via datanode_socket
-
-		// ssize_t recv (int socket, void *buffer, size_t size, int flags)
 		recv(datanode_socket, &datanode_status, sizeof(datanode_status), MSG_WAITALL);
 
 
 		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
 		{
 			//TODO: fill dnlist
+			int dd_id = datanode_status.datanode_id;
+			if (dnlist[dd_id - 1] == NULL) {
+				dnlist[dd_id - 1] = (dfs_datanode_t *) malloc(sizeof(dfs_datanode_t));
+				dncnt++;
+			}
+
+			dnlist[dd_id - 1]->live_marks++;
+			strcpy(dnlist[dd_id - 1]->ip, inet_ntoa(datanode_addr.sin_addr));
+			dnlist[dd_id -1] -> port = datanode_status.datanode_listen_port;
 			//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
 
 			//dnlist[n - 1]
 
 			safeMode = 0;
 		}
+
+
+		printf("dsf_namenode.c register_datanode(int heartbeat_socket) : Just registered!");
 		close(datanode_socket);
 	}
 	return 0;
