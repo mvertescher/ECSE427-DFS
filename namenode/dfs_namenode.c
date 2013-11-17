@@ -100,7 +100,7 @@ int register_datanode(int heartbeat_socket)
 	{
 		int datanode_socket = -1;
 		//TODO: accept connection from DataNodes and assign return value to datanode_socket;
-		datanode_socket = 
+		//datanode_socket = 
 		
 		//struct sockaddr_in hb_dn_addr;
 		//dfs_cm_datanode_status_t datanode_status;
