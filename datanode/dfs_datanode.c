@@ -22,6 +22,7 @@ int mainLoop()
 
 	assert (server_socket != INVALID_SOCKET);
 
+	printf("dfs_datanode.c: mainloop(): Entering for loop to listen for clients. \n");
 	// Listen to requests from the clients
 	for (;;)
 	{
@@ -29,16 +30,22 @@ int mainLoop()
 		int client_socket = -1;
 		//TODO: accept the client request
 
+		int sin_len = sizeof(struct sockaddr_in);
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
-		client_socket = accept(server_socket, (struct sockaddr *)&client_address, sizeof(client_address)); // &sizeof??
+
+		printf("dfs_datanode.c: mainloop(): About to accept. \n");
+		client_socket = accept(server_socket, (struct sockaddr *)&client_address, &sin_len); // &sizeof?? sizeof(client_address)
+		printf("dfs_datanode.c: mainloop(): Accepted client. \n");
 
 		assert(client_socket != INVALID_SOCKET);
 		dfs_cli_dn_req_t request;
 		//TODO: receive data from client_socket, and fill it to request
 
+		printf("dfs_datanode.c: mainloop(): About to recv. \n");
+
 		// ssize_t recv (int socket, void *buffer, size_t size, int flags)
 		recv(client_socket, &request, sizeof(request), MSG_WAITALL);
-
+		printf("dfs_datanode.c: mainloop(): recv done. \n");
 
 		requests_dispatcher(client_socket, request);
 		close(client_socket);
@@ -97,7 +104,10 @@ int start(int argc, char **argv)
 	//start one thread to report to the namenode periodically
 	//TODO: start a thread to report heartbeat
 	
-	strcpy(nn_ip, namenode_ip);
+	assert(datanode_listen_port == 50060 || datanode_listen_port == 50061);
+
+	nn_ip = (char *)malloc(sizeof(char) * strlen(argv[2]));
+	strcpy(nn_ip, argv[2]);
 
 	return mainLoop();
 }

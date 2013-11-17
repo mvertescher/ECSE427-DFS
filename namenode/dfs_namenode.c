@@ -76,6 +76,7 @@ int start(int argc, char **argv)
 	//TODO:create a thread to handle heartbeat service
 	//you can implement the related function in dfs_common.c and call it here
 
+	dncnt = 0; // Init datanode count
 	pthread_t *hbThread_id;
 
 	//create_thread(void * (*entry_point)(void*), void *args)
@@ -88,7 +89,7 @@ int start(int argc, char **argv)
 
 	assert(server_socket != INVALID_SOCKET);
 
-	safeMode = 0;
+	//safeMode = 0;
 	printf("dfs_namenode.c: start(): END, safeMode: %i \n",safeMode);
 
 	return mainLoop(server_socket);
@@ -104,17 +105,21 @@ int register_datanode(int heartbeat_socket)
 		int sin_len = sizeof(struct sockaddr_in);
 		struct sockaddr_in datanode_addr;
 
+		printf("dfs_namenode.c: register_datanode(): About to accept from datanode \n");
+
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
 		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // &sizeof??
-
 
 
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
 		
-		//TODO: receive datanode's status via datanode_socket
-		recv(datanode_socket, &datanode_status, sizeof(datanode_status), MSG_WAITALL);
+		printf("dfs_namenode.c: register_datanode(): About to recv from datanode \n");
 
+		//TODO: receive datanode's status via datanode_socket
+		int datanode_recv = recv(datanode_socket, &datanode_status, sizeof(datanode_status), MSG_WAITALL);
+
+		assert(datanode_recv != -1);
 
 		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
 		{
@@ -250,7 +255,8 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 	//TODO:fill the response and send back to the client
 	dfs_system_status response;
 	//response.datanode_num = dnlist[0].dn_id; //???
-	response.datanode_num = dncnt; //request.req_type; // NEED TO CHANGE
+	assert(dncnt == 2);
+	response.datanode_num = dncnt; // dncnt //request.req_type; // NEED TO CHANGE
 	//response.datanodes = &dnlist; //???
  
 	int send_error = send(client_socket, &response, sizeof(response), 0);
