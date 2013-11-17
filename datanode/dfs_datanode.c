@@ -9,6 +9,8 @@ int datanode_id = 0;
 int datanode_listen_port = 0;
 char *working_directory = NULL;
 
+char* nn_ip;
+
 // main service loop of datanode
 int mainLoop()
 {
@@ -52,13 +54,13 @@ static void *heartbeat()
 	datanode_status.datanode_listen_port = datanode_listen_port;
 
 	struct sockaddr_in namenode_addr;
-	
-	memset((void *)&nn_addr, 0, sizeof(nn_addr));
+
+	memset((void *)&namenode_addr, 0, sizeof(namenode_addr));
 		
 	//TODO: set nn_addr
-	nn_addr.sin_family = AF_INET;
-	nn_addr.sin_addr.s_addr = inet_addr(nn_ip);
-	nn_addr.sin_port = htons(hb_port);
+	namenode_addr.sin_family = AF_INET;
+	namenode_addr.sin_addr.s_addr = inet_addr(nn_ip);
+	namenode_addr.sin_port = htons(datanode_listen_port);
 
 	for (;;)
 	{
@@ -69,8 +71,8 @@ static void *heartbeat()
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
 		
-		if (connect(heartbeat_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr) ) == -1) printf("dfs_datanode.c: heartbeat: Connect error. \n");
-		if (send(heartbeat_socket, &ds, sizeof(ds), 0 ) == -1) printf("dfs_datanode.c: heartbeat: Send error. \n");
+		if (connect(heartbeat_socket, (struct sockaddr *) &namenode_addr, sizeof(namenode_addr)) == -1) printf("dfs_datanode.c: heartbeat: Connect error. \n");
+		if (send(heartbeat_socket, &datanode_status, sizeof(datanode_status), 0) == -1) printf("dfs_datanode.c: heartbeat: Send error. \n");
 
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
@@ -94,6 +96,8 @@ int start(int argc, char **argv)
 	strcpy(working_directory, argv[4]);
 	//start one thread to report to the namenode periodically
 	//TODO: start a thread to report heartbeat
+	
+	strcpy(nn_ip, namenode_ip);
 
 	return mainLoop();
 }
