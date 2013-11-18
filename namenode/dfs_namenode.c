@@ -156,6 +156,8 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 	dfs_cm_file_t** end_file_image = file_images + MAX_FILE_COUNT;
 	dfs_cm_file_t** file_image = file_images;
 	
+	int file_image_index = 0;
+
 	// Try to find if there is already an entry for that file
 	while (file_image != end_file_image)
 	{
@@ -171,6 +173,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		{
 			if (*file_image == NULL) break;
 			++file_image;
+			file_image_index++;
 		}
 
 		if (file_image == end_file_image) return 1;
@@ -189,6 +192,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 	(*file_image)->blocknum = block_count;
 	int next_data_node_index = 0;
 
+	first_unassigned_block_index = file_image_index;
 	//TODO:Assign data blocks to datanodes, round-robin style (see the Documents)
 	
 	dfs_cm_file_res_t response;
@@ -198,11 +202,14 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 	response.query_result.blocknum = block_count;
 
 
-	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s \n",request.file_name);
+	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s at first_unassigned_block_index: %i \n",request.file_name,first_unassigned_block_index);
 	
 	// Update file_images array
-	strcpy(file_images[first_unassigned_block_index]->filename,request.file_name);
-	file_images[first_unassigned_block_index]->blocknum = block_count;
+	//strcpy(file_images[first_unassigned_block_index]->filename,request.file_name);
+	//file_images[first_unassigned_block_index]->blocknum = block_count;
+	//file_images[first_unassigned_block_index]->file_size = request.file_size;
+
+	file_images[first_unassigned_block_index] = *file_image; 
 
 	// Iterate through data node list, lastRoundPoint looks at the last dn, i looks at which block you are assigning 
 	// formulate response
@@ -257,7 +264,7 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		}
 
 		// File image found! Send to client
-		printf("dfs_namenode.c: get_file_location: FOUND: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
+		//printf("dfs_namenode.c: get_file_location: FOUND: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
 		dfs_cm_file_res_t response;
 
 		//TODO: fill the response and send it back to the client
@@ -265,9 +272,9 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		response.query_result = *file_image;
 		assert(response.query_result.blocknum > 0);
 
-		printf("dfs_namenode.c: get_file_location: Send to client - response.query_result.blocknum: %i \n",response.query_result.blocknum);
+		//printf("dfs_namenode.c: get_file_location: Send to client - response.query_result.blocknum: %i \n",response.query_result.blocknum);
 		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
-		printf("dfs_namenode.c: get_file_location: Get file location okk \n");
+		//printf("dfs_namenode.c: get_file_location: Get file location okk \n");
 		return 0;
 	}
 	//FILE NOT FOUND
@@ -291,8 +298,9 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 	assert(send_error >= 0);
 }
 
-int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
+int get_file_update_point(int client_socket, dfs_cm_client_req_t request) // Modify File.
 {
+	printf("dfs_namenode.c: get_file_update_point: Start \n");
 	int i = 0;
 	for (i = 0; i < MAX_FILE_COUNT; ++i)
 	{
@@ -303,9 +311,19 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
 		//TODO: fill the response and send it back to the client
 		// Send back the data block assignments to the client
 		memset(&response, 0, sizeof(response));
-		//TODO: fill the response and send it back to the client
+
+		printf("dfs_namenode.c: get_file_update_point: Sending file to client: %s \n", file_image->filename);
+
+		//TODO: fill the response 
+		response.query_result = *file_image;
+
+		printf("dfs_namenode.c: get_file_update_point: response ip:port for 0 -  %s:%i \n", response.query_result.block_list[0].loc_ip,response.query_result.block_list[0].loc_port);
+		//send back to client
+		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
+		printf("dfs_namenode.c: get_file_update_point: response sent ok - END \n");
 		return 0;
 	}
+	printf("dfs_namenode.c: get_file_update_point: Error file not found \n");
 	//FILE NOT FOUND
 	return 1;
 }

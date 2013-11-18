@@ -245,24 +245,24 @@ int test_case_7(char **argv)
 	args[2] = "local_file";
 	int r2 = test_case_2(argv, 1024);
 	if (r2) {
-		printf("test_case_7() : fail on test_case_2");
+		printf("test_case_7() : fail on test_case_2\n");
 	} else {
-		printf("test_case_7(): test_case_2 OK");
+		printf("test_case_7(): test_case_2 OK\n");
 	}
 	args[2] = "local_file_medium";
 	int r6 = test_case_4(argv, 4096);
 		if (r2) {
-		printf("test_case_7() : fail on test_case_4");
+		printf("test_case_7() : fail on test_case_4]n");
 	} else {
-		printf("test_case_7(): test_case_4 OK");
+		printf("test_case_7(): test_case_4 OK]n");
 	}
 	args[2] = "local_file_large";
 	int r8	= test_case_6(argv, 8192);
 
 		if (r2) {
-		printf("test_case_7() : fail on test_case_4");
+		printf("test_case_7() : fail on test_case_6\n");
 	} else {
-		printf("test_case_7(): test_case_4 OK");
+		printf("test_case_7(): test_case_6 OK\n");
 	}
 	return r2 || r6 || r8;
 }

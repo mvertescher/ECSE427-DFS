@@ -108,8 +108,51 @@ void send_data(int socket, void* data, int size)
  */
 void receive_data(int socket, void* data, int size)
 {
-	assert(data != NULL);
-	assert(size >= 0);
-	if (socket == INVALID_SOCKET) return;
-	//TODO: fetch data via socket
+	// assert(data != NULL);
+	// assert(size >= 0);
+	// if (socket == INVALID_SOCKET) return;
+	// //TODO: fetch data via socket
+
+	// struct sockaddr_in block_dest;
+
+	// memset(&block_dest, 0, sizeof(block_dest));
+	// block_dest.sin_family = AF_INET;
+	// block_dest.sin_addr.s_addr = inet_addr(response.query_result.block_list[i].loc_ip);
+	// block_dest.sin_port = htons(response.query_result.block_list[i].loc_port);
+
+	// //Clear content to 0
+	// memset(response.query_result.block_list[i].content, 0, DFS_BLOCK_SIZE);
+
+	// printf("dfs_client.c : pull_file() : About to connect to datanode\n");
+	// //Connect to data node specified by block_lost[i]
+	// if (socket == -1 || connect(socket, (struct sockaddr *) &block_dest, sizeof(block_dest)) < 0) {
+	// 	if (socket != -1) {
+	// 		close(socket);
+
+	// 			printf("dfs_client.c : pull_file() : Datanode connection error....\n");
+	// 			return -1;
+	// 	}
+	// }
+
+	// printf("dfs_client.c : pull_file() : Connection to datanode a-ok\n");
+
+	// //assemble request
+
+	// pull_blk_req.op_type = 0;
+	// strcpy(pull_blk_req.block.owner_name, filename);
+	// pull_blk_req.block.block_id = i;
+	// printf("dfs_client.c : pull_file() : pull_blk_req.block.owner_name: %s \n",pull_blk_req.block.owner_name);
+
+	// //send request
+
+	// printf("dfs_client.c : pull_file() : about to send pull_blk_req over datanode_socket\n");
+	// send(datanode_socket, &pull_blk_req, sizeof(pull_blk_req), 0);
+
+	// //receive response and put into content
+	// recv(datanode_socket, data, DFS_BLOCK_SIZE, MSG_WAITALL);
+
+
+	// close(datanode_socket);
+	
 }
+
