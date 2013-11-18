@@ -165,7 +165,7 @@ int pull_file(int namenode_socket, const char *filename)
 
 
 	assert(response.query_result.blocknum > 0); // BUG. 
-	printf("dfs_client.c : pull_file() : About to enter for loop\n");
+	printf("dfs_client.c : pull_file() : About to enter for loop response.query_result.blocknum: %i \n", response.query_result.blocknum);
 
 	for (; i < response.query_result.blocknum; i++) {
 	

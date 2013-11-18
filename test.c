@@ -129,6 +129,7 @@ int test_case_4(char **argv, int op_type)
 	system("rm -f local_file_medium");
 	if (send_file_request(argv, "local_file_medium", 0) == -1)
 	{
+		printf("test.c: test_case_4: fail on send_file_request.\n");
 		return 1;
 	}
 	sleep(5);
@@ -142,8 +143,11 @@ int test_case_4(char **argv, int op_type)
 	fp = fopen("local_file_medium_1", "rb");
 	fread(buf_1, 4096, 1, fp);
 	fclose(fp);
-	if (memcmp(buf, buf_1, 4096) != 0)
+	if (memcmp(buf, buf_1, 4096) != 0) 
+	{
 		ret = 1;
+		printf("test.c: test_case_4: fail on memcmp.\n");
+	}	
 	free(buf);
 	free(buf_1);
 	return ret;
@@ -212,7 +216,7 @@ int test_case_6(char **argv, int op_type)
 {
 	system("rm -f local_file_large");
 	if (send_file_request(argv, "local_file_large", 0) == -1)
-	{
+	{	
 		return 1;
 	}
 	sleep(5);
@@ -240,10 +244,26 @@ int test_case_7(char **argv)
 	args[1] = argv[1];
 	args[2] = "local_file";
 	int r2 = test_case_2(argv, 1024);
+	if (r2) {
+		printf("test_case_7() : fail on test_case_2");
+	} else {
+		printf("test_case_7(): test_case_2 OK");
+	}
 	args[2] = "local_file_medium";
 	int r6 = test_case_4(argv, 4096);
+		if (r2) {
+		printf("test_case_7() : fail on test_case_4");
+	} else {
+		printf("test_case_7(): test_case_4 OK");
+	}
 	args[2] = "local_file_large";
 	int r8	= test_case_6(argv, 8192);
+
+		if (r2) {
+		printf("test_case_7() : fail on test_case_4");
+	} else {
+		printf("test_case_7(): test_case_4 OK");
+	}
 	return r2 || r6 || r8;
 }
 

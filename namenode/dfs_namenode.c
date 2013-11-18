@@ -29,7 +29,7 @@ int mainLoop(int server_socket)
 		int client_socket = -1;
 		//TODO: accept the connection from the client and assign the return value to client_socket
 
-		printf("dfs_namenode.c: mainLoop: Trying to accept: %i \n", client_socket);
+		printf("dfs_namenode.c: mainLoop: Trying to accept client_socket \n");
 
 
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr) struct sockaddr *)
@@ -150,6 +150,7 @@ int register_datanode(int heartbeat_socket)
 
 int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 {
+	// Only called if case = 1
 	printf("Responding to request for block assignment of file '%s'!\n", request.file_name);
 
 	dfs_cm_file_t** end_file_image = file_images + MAX_FILE_COUNT;
@@ -181,6 +182,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		(*file_image)->blocknum = 0;
 	}
 	
+	// Total number of 'chunks' in the file
 	int block_count = (request.file_size + (DFS_BLOCK_SIZE - 1)) / DFS_BLOCK_SIZE;
 	
 	int first_unassigned_block_index = (*file_image)->blocknum;
@@ -197,7 +199,10 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 
 
 	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s \n",request.file_name);
+	
+	// Update file_images array
 	strcpy(file_images[first_unassigned_block_index]->filename,request.file_name);
+	file_images[first_unassigned_block_index]->blocknum = block_count;
 
 	// Iterate through data node list, lastRoundPoint looks at the last dn, i looks at which block you are assigning 
 	// formulate response
@@ -250,6 +255,9 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 			printf("dfs_namenode.c: get_file_location: strcmp: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
 			continue;
 		}
+
+		// File image found! Send to client
+		printf("dfs_namenode.c: get_file_location: FOUND: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
 		dfs_cm_file_res_t response;
 
 		//TODO: fill the response and send it back to the client
@@ -257,6 +265,7 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		response.query_result = *file_image;
 		assert(response.query_result.blocknum > 0);
 
+		printf("dfs_namenode.c: get_file_location: Send to client - response.query_result.blocknum: %i \n",response.query_result.blocknum);
 		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
 		printf("dfs_namenode.c: get_file_location: Get file location okk \n");
 		return 0;
