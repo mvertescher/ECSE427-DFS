@@ -54,7 +54,7 @@ int mainLoop(int server_socket)
 
 static void *heartbeatService()
 {
-	int socket_handle = create_server_tcp_socket(50030);
+	int socket_handle = create_server_tcp_socket(50030); //50030
 	register_datanode(socket_handle);
 	close(socket_handle);
 	return 0;
@@ -108,8 +108,9 @@ int register_datanode(int heartbeat_socket)
 		printf("dfs_namenode.c: register_datanode(): About to accept from datanode \n");
 
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
-		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // &sizeof??
+		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // PORT: 50030
 
+		//safeMode = 0;
 
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;

@@ -140,7 +140,7 @@ int pull_file(int namenode_socket, const char *filename)
 	assert(namenode_socket != INVALID_SOCKET);
 	assert(filename != NULL);
 
-	printf("dfs_client.c: pull_file: namenode_socket: %i  filename: %s",namenode_socket,filename); 
+	printf("dfs_client.c: pull_file: namenode_socket: %i  filename: %s \n",namenode_socket,filename); 
 
 	//TODO: fill the request, and send
 	dfs_cm_client_req_t request; //char file_name[256]; int file_size; int req_type;//0-read, 1-write, 2-query datanodes, 3 - modify file;

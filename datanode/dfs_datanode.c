@@ -67,7 +67,11 @@ static void *heartbeat()
 	//TODO: set nn_addr
 	namenode_addr.sin_family = AF_INET;
 	namenode_addr.sin_addr.s_addr = inet_addr(nn_ip);
-	namenode_addr.sin_port = htons(datanode_listen_port);
+	namenode_addr.sin_port = htons(50030); // hardcode
+
+	assert(namenode_addr.sin_port == htons(50030)); 
+
+	printf("dfs_datanode.c: heartbeat(): About to enter for loop. \n");
 
 	for (;;)
 	{
@@ -77,9 +81,11 @@ static void *heartbeat()
 
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
-		
+		printf("dfs_datanode.c: heartbeat(): About to connect to namenode. \n");
 		if (connect(heartbeat_socket, (struct sockaddr *) &namenode_addr, sizeof(namenode_addr)) == -1) printf("dfs_datanode.c: heartbeat: Connect error. \n");
+		printf("dfs_datanode.c: heartbeat(): About to send to namenode. \n");
 		if (send(heartbeat_socket, &datanode_status, sizeof(datanode_status), 0) == -1) printf("dfs_datanode.c: heartbeat: Send error. \n");
+		printf("dfs_datanode.c: heartbeat(): Finished connect and send. \n");
 
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
@@ -104,6 +110,11 @@ int start(int argc, char **argv)
 	//start one thread to report to the namenode periodically
 	//TODO: start a thread to report heartbeat
 	
+	pthread_t *hbThread_id;
+
+	//create_thread(void * (*entry_point)(void*), void *args)
+	hbThread_id = create_thread(heartbeat, (void *)argv[2]); 
+
 	assert(datanode_listen_port == 50060 || datanode_listen_port == 50061);
 
 	nn_ip = (char *)malloc(sizeof(char) * strlen(argv[2]));
