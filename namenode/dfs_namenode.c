@@ -234,13 +234,19 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 int get_file_location(int client_socket, dfs_cm_client_req_t request)
 {
 	int i = 0;
+
 	for (i = 0; i < MAX_FILE_COUNT; ++i)
 	{
 		dfs_cm_file_t* file_image = file_images[i];
 		if (file_image == NULL) continue;
 		if (strcmp(file_image->filename, request.file_name) != 0) continue;
 		dfs_cm_file_res_t response;
+
 		//TODO: fill the response and send it back to the client
+
+		response.query_result = *file_image;
+
+		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
 
 		return 0;
 	}

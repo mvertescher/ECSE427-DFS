@@ -127,8 +127,15 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 {
 	assert(client_socket != INVALID_SOCKET);
 	assert(request != NULL);
-	char buffer[DFS_BLOCK_SIZE];
+	//char buffer[DFS_BLOCK_SIZE];
+	char *buffer = (char *) malloc(sizeof(char) * DFS_BLOCK_SIZE);
 	ext_read_block(request->block.owner_name, request->block.block_id, (void *)buffer);
+
+
+	printf("dfs_datanode.c : readblock() : about to send()\n");
+	send(client_socket, buffer, DFS_BLOCK_SIZE, 0);
+	printf("dfs_datanode.c : readblock() : send complete\n");
+	free(buffer);
 	//TODO:response the client with the data
 	return 0;
 }
