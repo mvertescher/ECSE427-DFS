@@ -81,11 +81,11 @@ static void *heartbeat()
 
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
-		printf("dfs_datanode.c: heartbeat(): About to connect to namenode. \n");
+		//printf("dfs_datanode.c: heartbeat(): About to connect to namenode. \n");
 		if (connect(heartbeat_socket, (struct sockaddr *) &namenode_addr, sizeof(namenode_addr)) == -1) printf("dfs_datanode.c: heartbeat: Connect error. \n");
-		printf("dfs_datanode.c: heartbeat(): About to send to namenode. \n");
+		//printf("dfs_datanode.c: heartbeat(): About to send to namenode. \n");
 		if (send(heartbeat_socket, &datanode_status, sizeof(datanode_status), 0) == -1) printf("dfs_datanode.c: heartbeat: Send error. \n");
-		printf("dfs_datanode.c: heartbeat(): Finished connect and send. \n");
+		//printf("dfs_datanode.c: heartbeat(): Finished connect and send. \n");
 
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
@@ -131,17 +131,18 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 	char *buffer = (char *) malloc(sizeof(char) * DFS_BLOCK_SIZE);
 	ext_read_block(request->block.owner_name, request->block.block_id, (void *)buffer);
 
-
+	//TODO:response the client with the data
 	printf("dfs_datanode.c : readblock() : about to send()\n");
 	send(client_socket, buffer, DFS_BLOCK_SIZE, 0);
 	printf("dfs_datanode.c : readblock() : send complete\n");
 	free(buffer);
-	//TODO:response the client with the data
+
 	return 0;
 }
 
 int create_block(const dfs_cli_dn_req_t* request)
 {
+	printf("dfs_datanode.c : create_block() : Creating new block on datanode\n");
 	ext_write_block(request->block.owner_name, request->block.block_id, (void *)request->block.content);
 	return 0;
 }

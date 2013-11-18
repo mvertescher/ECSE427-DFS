@@ -105,7 +105,7 @@ int register_datanode(int heartbeat_socket)
 		int sin_len = sizeof(struct sockaddr_in);
 		struct sockaddr_in datanode_addr;
 
-		printf("dfs_namenode.c: register_datanode(): About to accept from datanode \n");
+		//printf("dfs_namenode.c: register_datanode(): About to accept from datanode \n");
 
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
 		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // PORT: 50030
@@ -115,7 +115,7 @@ int register_datanode(int heartbeat_socket)
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
 		
-		printf("dfs_namenode.c: register_datanode(): About to recv from datanode \n");
+		//printf("dfs_namenode.c: register_datanode(): About to recv from datanode \n");
 
 		//TODO: receive datanode's status via datanode_socket
 		int datanode_recv = recv(datanode_socket, &datanode_status, sizeof(datanode_status), MSG_WAITALL);
@@ -142,7 +142,7 @@ int register_datanode(int heartbeat_socket)
 		}
 
 
-		printf("dsf_namenode.c register_datanode(int heartbeat_socket) : Just registered!");
+		//printf("dsf_namenode.c register_datanode(int heartbeat_socket) : Just registered!");
 		close(datanode_socket);
 	}
 	return 0;
@@ -195,10 +195,15 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 	//dfs_cm_file_t query_result
 	response.query_result.blocknum = block_count;
 
+
+	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s \n",request.file_name);
+	strcpy(file_images[first_unassigned_block_index]->filename,request.file_name);
+
 	// Iterate through data node list, lastRoundPoint looks at the last dn, i looks at which block you are assigning 
 	// formulate response
 	// and update FileImgInMemory
 
+	printf("dfs_namenode.c: get_file_receivers: Beginning of for loop up to block_count: %i \n", block_count);
 	int i = 0, datanode_index = 0; 
 	for (i = 0; i < block_count; i++){
 				
@@ -214,7 +219,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		strcpy(response.query_result.block_list[i].owner_name, file_images[first_unassigned_block_index]->filename);
 		datanode_index = (datanode_index + 1) % dncnt;		
 	}
-
+	printf("dfs_namenode.c: get_file_receivers: End of for: response.query_result.block_list[i].owner_name: %s \n",response.query_result.block_list[i].owner_name);
 
 	//dfs_cm_file_res_t response;
 	//memset(&response, 0, sizeof(response));
@@ -232,25 +237,32 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 }
 
 int get_file_location(int client_socket, dfs_cm_client_req_t request)
-{
+{	
+	printf("dfs_namenode.c: get_file_location: START \n");
+	
 	int i = 0;
-
 	for (i = 0; i < MAX_FILE_COUNT; ++i)
-	{
+	{	
+		//printf("dfs_namenode.c: get_file_location: For loop iteration \n");
 		dfs_cm_file_t* file_image = file_images[i];
 		if (file_image == NULL) continue;
-		if (strcmp(file_image->filename, request.file_name) != 0) continue;
+		if (strcmp(file_image->filename, request.file_name) != 0) { 
+			printf("dfs_namenode.c: get_file_location: strcmp: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
+			continue;
+		}
 		dfs_cm_file_res_t response;
 
 		//TODO: fill the response and send it back to the client
 
 		response.query_result = *file_image;
+		assert(response.query_result.blocknum > 0);
 
 		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
-
+		printf("dfs_namenode.c: get_file_location: Get file location okk \n");
 		return 0;
 	}
 	//FILE NOT FOUND
+	printf("dfs_namenode.c: get_file_location: Error file not found \n");
 	return 1;
 }
 

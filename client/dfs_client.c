@@ -146,7 +146,9 @@ int pull_file(int namenode_socket, const char *filename)
 
 	//TODO: fill the request, and send
 	dfs_cm_client_req_t request; //char file_name[256]; int file_size; int req_type;//0-read, 1-write, 2-query datanodes, 3 - modify file;
+	memset(&request, 0, sizeof(dfs_cm_client_req_t));
 	request.req_type = 0; //important
+	strcpy(request.file_name, filename);
 
 	printf("dfs_client.c : pull_file() : about to send over namenode_socket\n");
 	//send request to namenode through namenode_socket
@@ -161,7 +163,10 @@ int pull_file(int namenode_socket, const char *filename)
 	dfs_cli_dn_req_t pull_blk_req;
 	struct sockaddr_in block_dest;
 
-	printf("dfs_client.c : pull_file() : About to enter foor loop\n");
+
+	assert(response.query_result.blocknum > 0); // BUG. 
+	printf("dfs_client.c : pull_file() : About to enter for loop\n");
+
 	for (; i < response.query_result.blocknum; i++) {
 	
 		//create new socket
@@ -175,24 +180,29 @@ int pull_file(int namenode_socket, const char *filename)
 		//Clear content to 0
 		memset(response.query_result.block_list[i].content, 0, DFS_BLOCK_SIZE);
 
+		printf("dfs_client.c : pull_file() : About to connect to datanode\n");
 		//Connect to data node specified by block_lost[i]
 		if (datanode_socket == -1 || connect(datanode_socket, (struct sockaddr *) &block_dest, sizeof(block_dest)) < 0) {
 			if (datanode_socket != -1) {
 				close(datanode_socket);
+
+					printf("dfs_client.c : pull_file() : Datanode connection error....\n");
 					return -1;
 			}
 		}
+
+		printf("dfs_client.c : pull_file() : Connection to datanode a-ok\n");
 
 		//assemble request
 
 		pull_blk_req.op_type = 0;
 		strcpy(pull_blk_req.block.owner_name, filename);
 		pull_blk_req.block.block_id = i;
-
+		printf("dfs_client.c : pull_file() : pull_blk_req.block.owner_name: %s \n",pull_blk_req.block.owner_name);
 
 		//send request
 
-	printf("dfs_client.c : pull_file() : about to send pull_blk_req over datanode_socket\n");
+		printf("dfs_client.c : pull_file() : about to send pull_blk_req over datanode_socket\n");
 		send(datanode_socket, &pull_blk_req, sizeof(pull_blk_req), 0);
 
 		//receive response and put into content
