@@ -47,6 +47,13 @@ int mainLoop()
 		recv(client_socket, &request, sizeof(request), MSG_WAITALL);
 		printf("dfs_datanode.c: mainloop(): recv done. \n");
 
+		printf("dfs_datanode.c: mainloop(): request.block.block_id: %i \n",request.block.block_id);
+		printf("dfs_datanode.c: mainloop(): request.block.owner_name: %s \n",request.block.owner_name);
+		printf("dfs_datanode.c: mainloop(): request.block.content: %s \n",request.block.content);
+		printf("dfs_datanode.c: mainloop(): request.op_type: %i \n",request.op_type);
+
+		printf("dfs_datanode.c: mainloop(): Finished. \n");
+
 		requests_dispatcher(client_socket, request);
 		close(client_socket);
 	}

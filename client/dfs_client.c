@@ -33,9 +33,9 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 
 	//offset -- This is the number of bytes to offset from whence.
 	//whence -- This is the position from where offset is added.
- 	fseek(file, 0, SEEK_END); 
-	request.file_size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+ 	//fseek(file, 0, SEEK_END); 
+	//request.file_size = ftell(file);
+	//fseek(file, 0, SEEK_SET);
 
 	request.req_type = 3; //modify file
 	
@@ -47,6 +47,19 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 	dfs_cm_file_res_t response;
 	while(recv(namenode_socket, &response, sizeof(response), MSG_WAITALL) == -1);
 	//TODO: send the updated block to the proper datanode
+
+	int total_chunks = ((file_size - 1)/DFS_BLOCK_SIZE + 1);
+	int cur_chunks = response.query_result.blocknum;
+	// // Check if we need to expand the file: 
+	printf("dfs_client.c: modify_file: response.query_result.blocknum: %i need %i \n",cur_chunks,total_chunks); 
+	printf("dfs_client.c: modify_file: response.query_result.filename: %s \n",response.query_result.filename); 
+	printf("dfs_client.c: modify_file: response.query_result.file_size %i \n",response.query_result.file_size); 
+	// while (total_chunks > cur_chunks) 
+	// { 
+
+
+	// }
+
 
 	// query_result: char filename[256]; dfs_cm_block_t block_list[MAX_FILE_BLK_COUNT]; int file_size; int blocknum;
 	
@@ -96,54 +109,60 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 			return -1;
 		}
 
-		// 4 - Fill pull request struct 
-		pull_block_request.op_type = 0; // READ
-		strcpy(pull_block_request.block.owner_name, filename);
-		pull_block_request.block.block_id = i;
-		printf("dfs_client.c : modify_file() : pull_block_request.block.owner_name: %s \n",pull_block_request.block.owner_name);
+		// // 4 - Fill pull request struct 
+		// pull_block_request.op_type = 0; // READ
+		// strcpy(pull_block_request.block.owner_name, filename);
+		// pull_block_request.block.block_id = i;
+		// printf("dfs_client.c : modify_file() : pull_block_request.block.owner_name: %s \n",pull_block_request.block.owner_name);
 
-		// 5 - Send pull request 
-		printf("dfs_client.c : modify_file() : about to send pull_block_request over datanode_socket\n");
-		send(datanode_socket, &pull_block_request, sizeof(pull_block_request), 0);
+		// // 5 - Send pull request 
+		// printf("dfs_client.c : modify_file() : about to send pull_block_request over datanode_socket\n");
+		// send(datanode_socket, &pull_block_request, sizeof(pull_block_request), 0);
 
-		// Clear buffer
-		memset(buffer, 0, DFS_BLOCK_SIZE);
+		// // Clear buffer
+		// memset(buffer, 0, DFS_BLOCK_SIZE);
 		
-		// 6 - Receive response and put into buffer
-		recv(datanode_socket, buffer, DFS_BLOCK_SIZE, MSG_WAITALL);
+		// // 6 - Receive response and put into buffer
+		// recv(datanode_socket, buffer, DFS_BLOCK_SIZE, MSG_WAITALL);
 
 		// Only one iteration - write to part of buffer
-		if (first_block_index == last_block_index) {
-			buf_pnt = buf_pnt + first_block_index;
-			fread(buf_pnt, sizeof(char), (last_block_index - first_block_index), file);
-		}
+		// if (first_block_index == last_block_index) {
+		// 	printf("dfs_client.c : modify_file() : first_block_index == last_block_index, first_block_start: %i  last_block_end: %i \n",first_block_start,last_block_end);
+		// 	buf_pnt = buf_pnt + first_block_start;
+		// 	fread(buf_pnt, sizeof(char), (last_block_end - first_block_start), file);
+		// }
 
-		// Write from first_block_start to DFS_BLOCK_SIZE
-		else if (i == first_block_index) {
-			buf_pnt = buf_pnt + first_block_index;
-			fread(buf_pnt, sizeof(char), (DFS_BLOCK_SIZE - first_block_index), file);
-		}
+		// // Write from first_block_start to DFS_BLOCK_SIZE
+		// else if (i == first_block_index) {
+		// 	buf_pnt = buf_pnt + first_block_start;
+		// 	fread(buf_pnt, sizeof(char), (DFS_BLOCK_SIZE - first_block_start), file);
+		// }
 
-		// Write from 0 to last_block_end
-		else if (i == last_block_index) {
-			fread(buf_pnt, sizeof(char), last_block_end, file);
-		}
+		// // Write from 0 to last_block_end
+		// else if (i == last_block_index) {
+		// 	fread(buf_pnt, sizeof(char), last_block_end, file);
+		// }
 
-		// Write full block
-		else {
-			fread(buf_pnt, sizeof(char), DFS_BLOCK_SIZE, file);
-		}
+		// // Write full block
+		// else {
+		// 	fread(buf_pnt, sizeof(char), DFS_BLOCK_SIZE, file);
+		// }
 
-		// memset(client_datanode_request.block.content, 0, DFS_BLOCK_SIZE);
-		fread(client_datanode_request.block.content, sizeof(char), DFS_BLOCK_SIZE, file); 
+		memset(client_datanode_request.block.content, 0, DFS_BLOCK_SIZE);
+		//fread(client_datanode_request.block.content, sizeof(char), DFS_BLOCK_SIZE, file); 
 		
-		memcpy(client_datanode_request.block.content, buffer, DFS_BLOCK_SIZE);
+		//memcpy(client_datanode_request.block.content, buffer, DFS_BLOCK_SIZE);
+
+		fread(client_datanode_request.block.content, sizeof(char), DFS_BLOCK_SIZE, file);
 
 		client_datanode_request.op_type = 1; // datanode - create block
 		strcpy(client_datanode_request.block.owner_name, response.query_result.block_list[i].owner_name);
 		client_datanode_request.block.block_id = i;
 
-		printf("dfs_client.c: modify_file: Attempting to send to datanode \n");
+		printf("dfs_client.c: modify_file: Attempting to send to datanode client_datanode_request.block.owner_name: %s \n",client_datanode_request.block.owner_name);
+		printf("dfs_client.c: modify_file: client_datanode_request.block.block_id: %i \n",client_datanode_request.block.block_id);
+		printf("dfs_client.c: modify_file: client_datanode_request.block.owner_name: %s \n",client_datanode_request.block.owner_name);
+		printf("dfs_client.c: modify_file: client_datanode_request.block.content: %s \n",client_datanode_request.block.content);
 
 		if (send(datanode_socket, &client_datanode_request, sizeof(client_datanode_request), 0) == -1) // Send data
 			printf("dfs_client.c: modify_file: Datanode push block send failure.\n");
