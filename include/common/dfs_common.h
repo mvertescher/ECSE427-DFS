@@ -90,4 +90,6 @@ int create_client_tcp_socket(char* address, int port);
 int create_server_tcp_socket(int port);
 void send_data(int socket, void* data, int size);
 void receive_data(int socket, void* data, int size);
+void send_block_to_datanode(int datanode_socket, void* data, int size, char *filename, int block_id);
+void fetch_block_from_datanode(int datanode_socket, void* data, int size, const char *filename, int block_id);
 #endif

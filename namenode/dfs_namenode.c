@@ -105,18 +105,13 @@ int register_datanode(int heartbeat_socket)
 		int sin_len = sizeof(struct sockaddr_in);
 		struct sockaddr_in datanode_addr;
 
-		//printf("dfs_namenode.c: register_datanode(): About to accept from datanode \n");
-
+		//printf("dfs_namenode.c: register_datanode(): Waiting to accept new datanode. \n"); // Repeats 
 		// int accept (int socket, struct sockaddr *addr, socklen_t *length_ptr)
 		datanode_socket = accept(heartbeat_socket, (struct sockaddr *)&datanode_addr, &sin_len); // PORT: 50030
-
-		//safeMode = 0;
 
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
 		
-		//printf("dfs_namenode.c: register_datanode(): About to recv from datanode \n");
-
 		//TODO: receive datanode's status via datanode_socket
 		int datanode_recv = recv(datanode_socket, &datanode_status, sizeof(datanode_status), MSG_WAITALL);
 
@@ -126,7 +121,9 @@ int register_datanode(int heartbeat_socket)
 		{
 			//TODO: fill dnlist
 			int dd_id = datanode_status.datanode_id;
-			if (dnlist[dd_id - 1] == NULL) {
+			if (dnlist[dd_id - 1] == NULL) 
+			{
+				printf("dfs_namenode.c: register_datanode(): New datanode registered at index %i \n",dd_id);
 				dnlist[dd_id - 1] = (dfs_datanode_t *) malloc(sizeof(dfs_datanode_t));
 				dncnt++;
 			}
@@ -135,14 +132,9 @@ int register_datanode(int heartbeat_socket)
 			strcpy(dnlist[dd_id - 1]->ip, inet_ntoa(datanode_addr.sin_addr));
 			dnlist[dd_id -1] -> port = datanode_status.datanode_listen_port;
 			//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
-
-			//dnlist[n - 1]
-
-			safeMode = 0;
+			safeMode = 0; // Exit safemode
 		}
 
-
-		//printf("dsf_namenode.c register_datanode(int heartbeat_socket) : Just registered!");
 		close(datanode_socket);
 	}
 	return 0;
@@ -187,72 +179,60 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		(*file_image)->blocknum = 0;
 	}
 	
-	// Total number of 'chunks' in the file
-	int block_count = (request.file_size + (DFS_BLOCK_SIZE - 1)) / DFS_BLOCK_SIZE;
-	
-	int first_unassigned_block_index = (*file_image)->blocknum;
-	(*file_image)->blocknum = block_count;
-	int next_data_node_index = 0;
-
-	first_unassigned_block_index = file_image_index;
-	//TODO:Assign data blocks to datanodes, round-robin style (see the Documents)
-	
+	// Create and memset the response 
 	dfs_cm_file_res_t response;
 	memset(&response, 0, sizeof(response));
 
-	//dfs_cm_file_t query_result
-	response.query_result.blocknum = block_count;
-
-
-	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s at first_unassigned_block_index: %i \n",request.file_name,first_unassigned_block_index);
+	// Total number of 'chunks' in the file
+	int block_count = (request.file_size + (DFS_BLOCK_SIZE - 1)) / DFS_BLOCK_SIZE;
 	
-	// Update file_images array
-	//strcpy(file_images[first_unassigned_block_index]->filename,request.file_name);
-	//file_images[first_unassigned_block_index]->blocknum = block_count;
-	//file_images[first_unassigned_block_index]->file_size = request.file_size;
+	// Assign the first_unassigned_block_index
+	int first_unassigned_block_index = file_image_index;
+	
+	// Set the total number of blocks in the response and in the file image 
+	response.query_result.blocknum = block_count;
+	(*file_image)->blocknum = block_count;
 
+	printf("dfs_namenode.c: get_file_receivers: Asssign filename - request.file_name: %s at first_unassigned_block_index: %i \n",
+		request.file_name,first_unassigned_block_index);
+	
+	// Update file_images array at the first unassigned position with the new file_image struct
 	file_images[first_unassigned_block_index] = *file_image; 
 
-	// Iterate through data node list, lastRoundPoint looks at the last dn, i looks at which block you are assigning 
-	// formulate response
-	// and update FileImgInMemory
-
+	//TODO:Assign data blocks to datanodes, round-robin style (see the Documents)
+	// For every block in the file, assign them to a datanode by updating the response and array of file images 
 	printf("dfs_namenode.c: get_file_receivers: Beginning of for loop up to block_count: %i \n", block_count);
 	int i = 0, datanode_index = 0; 
 	for (i = 0; i < block_count; i++){
-				
+		
+		// Update block_id in response and file_images array		
 		response.query_result.block_list[i].block_id = i;
 		file_images[first_unassigned_block_index]->block_list[i].block_id = i;
-		 
+		
+		// Update datanode port in response and file_images array 
 		response.query_result.block_list[i].loc_port = dnlist[datanode_index]->port;
 		file_images[first_unassigned_block_index]->block_list[i].loc_port = dnlist[datanode_index]->port;
 		
+		// Update datanode ip in response and file_images array
 		memcpy(response.query_result.block_list[i].loc_ip, dnlist[datanode_index]->ip, 16*sizeof(char));	
 		memcpy(file_images[first_unassigned_block_index]->block_list[i].loc_ip, dnlist[datanode_index]->ip, 16*sizeof(char));
 	
+		// Update owner_name in response
 		strcpy(response.query_result.block_list[i].owner_name, file_images[first_unassigned_block_index]->filename);
 		datanode_index = (datanode_index + 1) % dncnt;		
 	}
-	//printf("dfs_namenode.c: get_file_receivers: End of for: response.query_result.block_list[i].owner_name: %s \n",response.query_result.block_list[i].owner_name);
-	printf("dfs_namenode.c: get_file_receivers: End of for, file_images: file_size: %i chunks(blocknum): %i \n",file_images[first_unassigned_block_index]->file_size,response.query_result.blocknum);
-	//dfs_cm_file_res_t response;
-	//memset(&response, 0, sizeof(response));
-	//TODO: fill the response and send it back to the client
+	printf("dfs_namenode.c: get_file_receivers: End of for, file_images: file_size: %i chunks(blocknum): %i \n",
+	file_images[first_unassigned_block_index]->file_size,response.query_result.blocknum);
 
-	//memcpy(&response,&query_result); 
 
-	if (send(client_socket, &response, sizeof(response), 0) < 0) 
-	{
-		printf("dfs_namenode.c: get_file_receivers: Client send response failure. \n");
-		return 1;
-	}
+	if (send(client_socket, &response, sizeof(response), 0) < 0) printf("dfs_namenode.c: get_file_receivers: Client send response failure. \n");
 
 	return 0;
 }
 
 int get_file_location(int client_socket, dfs_cm_client_req_t request)
 {	
-	printf("dfs_namenode.c: get_file_location: START \n");
+	printf("dfs_namenode.c: get_file_location: Getting file location of %s. \n",request.file_name);
 	
 	int i = 0;
 	for (i = 0; i < MAX_FILE_COUNT; ++i)
@@ -261,7 +241,7 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		dfs_cm_file_t* file_image = file_images[i];
 		if (file_image == NULL) continue;
 		if (strcmp(file_image->filename, request.file_name) != 0) { 
-			printf("dfs_namenode.c: get_file_location: strcmp: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
+			//printf("dfs_namenode.c: get_file_location: strcmp: file_image->filename: %s  request.file_name: %s \n",file_image->filename, request.file_name);
 			continue;
 		}
 
@@ -274,9 +254,8 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		response.query_result = *file_image;
 		assert(response.query_result.blocknum > 0);
 
-		//printf("dfs_namenode.c: get_file_location: Send to client - response.query_result.blocknum: %i \n",response.query_result.blocknum);
-		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
-		//printf("dfs_namenode.c: get_file_location: Get file location okk \n");
+		if(send(client_socket, &response, sizeof(response), 0) == -1) printf("dfs_namenode.c: get_file_location: Client send failure \n");
+
 		return 0;
 	}
 	//FILE NOT FOUND
@@ -323,7 +302,7 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request) // Mod
 		
 		printf("dfs_namenode.c: get_file_update_point: request.file_size: %i  file_image->file_size: %i \n",request.file_size,file_image->file_size);
 
-		int new_blocknum = ((request.file_size - 1) / 1024) + 1;
+		int new_blocknum = ((request.file_size - 1) / DFS_BLOCK_SIZE) + 1;
 		// If we need to enlarge the file 
 		if (request.file_size > file_image->file_size) {
 			printf("dfs_namenode.c: get_file_update_point: ENLARGING FILE new_blocknum: %i \n",new_blocknum);
@@ -341,7 +320,8 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request) // Mod
 	
 				strcpy(response.query_result.block_list[j].owner_name, file_images[i]->filename);
 				datanode_index = (datanode_index + 1) % dncnt;
-				printf("dfs_namenode.c: get_file_update_point: response.query_result.block_list[j].owner_name: %s \n",response.query_result.block_list[j].owner_name);
+				printf("dfs_namenode.c: get_file_update_point: response.query_result.block_list[j].owner_name: %s \n",
+				response.query_result.block_list[j].owner_name);
 			}
 		}
 		// Update file_images
@@ -354,8 +334,10 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request) // Mod
 		//response.query_result = *file_image;
 
 		printf("dfs_namenode.c: get_file_update_point: RESPONSE TO CLIENT: \n");
-		printf("dfs_namenode.c: get_file_update_point: Size of file: %i Number of chunks: %i \n", response.query_result.file_size, response.query_result.blocknum);
-		printf("dfs_namenode.c: get_file_update_point: response ip:port for 0 -  %s:%i \n", response.query_result.block_list[0].loc_ip,response.query_result.block_list[0].loc_port);
+		printf("dfs_namenode.c: get_file_update_point: Size of file: %i Number of chunks: %i \n", 
+			response.query_result.file_size, response.query_result.blocknum);
+		printf("dfs_namenode.c: get_file_update_point: response ip:port for 0 -  %s:%i \n", 
+			response.query_result.block_list[0].loc_ip,response.query_result.block_list[0].loc_port);
 		//send back to client
 		assert(send(client_socket, &response, sizeof(response), 0) >= 0);
 		printf("dfs_namenode.c: get_file_update_point: response sent ok - END \n");

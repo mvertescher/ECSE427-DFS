@@ -9,13 +9,9 @@
 inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 {
 	//TODO: create the thread and run it
-	pthread_t * thread;
-
-	//int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
-
-	pthread_t t = malloc(sizeof(pthread_t));
-	pthread_create(&t, NULL, entry_point, args);
-	thread = &t; 
+	// int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
+	pthread_t *thread = malloc(sizeof(pthread_t));
+	pthread_create(thread, NULL, entry_point, args);
 
 	return thread;
 }
@@ -53,12 +49,11 @@ int create_client_tcp_socket(char* address, int port)
 	client_addr.sin_port = htons(port);
 
 
-	printf("dfs_common.c: create_client_tcp_socket: Attempting to connect\n");
+	printf("dfs_common.c: create_client_tcp_socket: Connecting to %s:%i \n",address,port);
 	// Connect 	
 	if ( socket == -1 || connect(socket, (struct sockaddr *) &client_addr, sizeof(client_addr)) < 0 ) { 
 		printf("dfs_common.c: create_client_tcp_socket: Client cannot connect to server\n"); return -1 ;
 	}
-	printf("dfs_common.c: create_client_tcp_socket: Connection finished: socket %i \n",socket);
 
 	return socket;
 }
@@ -98,6 +93,7 @@ void send_data(int socket, void* data, int size)
 	assert(size >= 0);
 	if (socket == INVALID_SOCKET) return;
 	//TODO: send data through socket
+
 }
 
 /**
@@ -108,51 +104,70 @@ void send_data(int socket, void* data, int size)
  */
 void receive_data(int socket, void* data, int size)
 {
-	// assert(data != NULL);
-	// assert(size >= 0);
-	// if (socket == INVALID_SOCKET) return;
-	// //TODO: fetch data via socket
-
-	// struct sockaddr_in block_dest;
-
-	// memset(&block_dest, 0, sizeof(block_dest));
-	// block_dest.sin_family = AF_INET;
-	// block_dest.sin_addr.s_addr = inet_addr(response.query_result.block_list[i].loc_ip);
-	// block_dest.sin_port = htons(response.query_result.block_list[i].loc_port);
-
-	// //Clear content to 0
-	// memset(response.query_result.block_list[i].content, 0, DFS_BLOCK_SIZE);
-
-	// printf("dfs_client.c : pull_file() : About to connect to datanode\n");
-	// //Connect to data node specified by block_lost[i]
-	// if (socket == -1 || connect(socket, (struct sockaddr *) &block_dest, sizeof(block_dest)) < 0) {
-	// 	if (socket != -1) {
-	// 		close(socket);
-
-	// 			printf("dfs_client.c : pull_file() : Datanode connection error....\n");
-	// 			return -1;
-	// 	}
-	// }
-
-	// printf("dfs_client.c : pull_file() : Connection to datanode a-ok\n");
-
-	// //assemble request
-
-	// pull_blk_req.op_type = 0;
-	// strcpy(pull_blk_req.block.owner_name, filename);
-	// pull_blk_req.block.block_id = i;
-	// printf("dfs_client.c : pull_file() : pull_blk_req.block.owner_name: %s \n",pull_blk_req.block.owner_name);
-
-	// //send request
-
-	// printf("dfs_client.c : pull_file() : about to send pull_blk_req over datanode_socket\n");
-	// send(datanode_socket, &pull_blk_req, sizeof(pull_blk_req), 0);
-
-	// //receive response and put into content
-	// recv(datanode_socket, data, DFS_BLOCK_SIZE, MSG_WAITALL);
-
-
-	// close(datanode_socket);
+	assert(data != NULL);
+	assert(size >= 0);
+	if (socket == INVALID_SOCKET) return;
+	//TODO: fetch data via socket
 	
 }
 
+
+/**
+ * socket - Datanode socket
+ * data - the buffer containing the data
+ * size - the size of buffer, in byte
+ * filename - owner of the block
+ * block_id - block id
+ */
+void send_block_to_datanode(int datanode_socket, void* data, int size, char *filename, int block_id)
+{
+	assert(data != NULL);
+	assert(size >= 0);
+	if (datanode_socket == INVALID_SOCKET) return;
+
+	// Assume that the socket has already connected 
+	dfs_cli_dn_req_t client_to_datanode_request; // Create a new datanode request
+ 
+	memset(client_to_datanode_request.block.content, 0, DFS_BLOCK_SIZE); // Clear the request buffer
+	memcpy(client_to_datanode_request.block.content,data,DFS_BLOCK_SIZE); // Copy the data into the request buffer 
+	client_to_datanode_request.op_type = 1; // Signals datanode to create block
+	strcpy(client_to_datanode_request.block.owner_name, filename); // Set the filename field of the request
+	client_to_datanode_request.block.block_id = block_id; // Set block id
+
+	// Send request to datanode
+	if (send(datanode_socket, &client_to_datanode_request, sizeof(client_to_datanode_request), 0) == -1) // Send data
+		printf("dfs_common.c: send_block_to_datanode: Datanode push block send failure.\n");
+	
+	// Close the socket
+	close(datanode_socket);
+}
+
+
+/**
+ * socket - Datanode socket
+ * data - the buffer containing the data
+ * size - the size of buffer, in byte
+ * filename - owner of the block
+ * block_id - block id
+ */
+void fetch_block_from_datanode(int datanode_socket, void* data, int size, const char *filename, int block_id)
+{
+	assert(data != NULL);
+	assert(size >= 0);
+	if (datanode_socket == INVALID_SOCKET) return;
+	//TODO: fetch data via socket
+
+	dfs_cli_dn_req_t client_to_datanode_request;
+	
+	client_to_datanode_request.op_type = 0;	// Read from datanode signal 
+	strcpy(client_to_datanode_request.block.owner_name, filename);	// Copy in the filename
+	client_to_datanode_request.block.block_id = block_id; // Set block id
+
+	// Send request to datanode
+	send(datanode_socket, &client_to_datanode_request, sizeof(client_to_datanode_request), 0);
+
+	// Receive response and put into buffer
+	recv(datanode_socket, data, DFS_BLOCK_SIZE, MSG_WAITALL);
+
+	close(datanode_socket);
+}

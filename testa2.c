@@ -19,9 +19,14 @@ int test_case_1(char **argv, int op_type)
 	sfs_reloadfs("d1/local_fs");
 	fd = sfs_open("/", "local_file_blk_0");
 	sfs_read(fd, buf, DFS_BLOCK_SIZE);
+
 	sfs_close(fd);
 	fread(buf_local, 1, DFS_BLOCK_SIZE, local_fp);
+
+	printf("testa2.c: test_case_1: buf_local: %s \n",buf_local);
+	printf("testa2.c: test_case_1:       buf: %s \n",buf);
 	if (memcmp(buf_local, buf, DFS_BLOCK_SIZE) != 0) ret = 1;
+	printf("testa2.c: test_case_1: ret: %i \n",ret);
 	if (ret == 0)
 	{
 		fseek(local_fp, 2 * DFS_BLOCK_SIZE, SEEK_SET); 
@@ -142,7 +147,7 @@ int main(int argc, char **argv)
 	result[1] = "FAILED";
 	//generate data
 	//can contact to single datanode
-	generate_data("local_file", 8192);
+	generate_data("local_file", 8192); 
 	printf("TEST CASE 1:%s\n", result[test_case_1(argv, 1)]);
 	printf("TEST CASE 2:%s\n", result[test_case_2(argv, 0)]);
 	return 0;
